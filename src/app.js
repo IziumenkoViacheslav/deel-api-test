@@ -33,7 +33,6 @@ app.get('/contracts', getProfile, async (req, res) => {
       ],
     },
   });
-  if (contracts.lenght) return res.status(404).end();
   res.json(contracts);
 });
 module.exports = app;
