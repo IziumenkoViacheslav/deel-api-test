@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Op } = require('sequelize');
-const { sequelize, Contract, Job, Profile } = require('./model');
+const { Contract, Job, Profile } = require('./model');
 const { getProfile } = require('./middleware/getProfile');
 
 const app = express();
@@ -60,39 +60,41 @@ app.get('/jobs/unpaid', async (req, res) => {
  */
 app.post('/jobs/:job_id/pay', async (req, res) => {
   try {
-    const profileId = req.get('profile_id');
-    const profile = await Profile.findOne({ where: { id: profileId } });
-    const { amount } = req.body;
-    const balance = profile.balance;
-    if (balance < amount) {
-      throw new Error('user have no money for this payment');
-    }
-    if (profile.dataValues.type !== 'client') {
-      throw new Error('only client can pay to the contractor');
-    }
-    const clientProfileUpdated = await Profile.update(
-      {
-        balance: profile.dataValues.balance - amount,
-      },
-      {
-        where: { id: profile.dataValues.id },
+    await sequelize.transaction(async (t) => {
+      const profileId = req.get('profile_id');
+      const profile = await Profile.findOne({ where: { id: profileId } });
+      const { amount } = req.body;
+      const balance = profile.balance;
+      if (balance < amount) {
+        throw new Error('user have no money for this payment');
       }
-    );
-    const job = await Job.findOne({
-      where: { id: req.params.job_id },
-      include: { model: Contract, where: { status: 'in_progress' } },
-    });
+      if (profile.dataValues.type !== 'client') {
+        throw new Error('only client can pay to the contractor');
+      }
+      const clientProfileUpdated = await Profile.update(
+        {
+          balance: profile.dataValues.balance - amount,
+        },
+        {
+          where: { id: profile.dataValues.id },
+        }
+      );
+      const job = await Job.findOne({
+        where: { id: req.params.job_id },
+        include: { model: Contract, where: { status: 'in_progress' } },
+      });
 
-    const contractorId = job.dataValues.Contract.dataValues.ContractorId;
-    const cotractorProfileUpdated = await Profile.update(
-      {
-        balance: profile.dataValues.balance + amount,
-      },
-      {
-        where: { id: contractorId },
-      }
-    );
-    res.json({ success: true });
+      const contractorId = job.dataValues.Contract.dataValues.ContractorId;
+      const cotractorProfileUpdated = await Profile.update(
+        {
+          balance: profile.dataValues.balance + amount,
+        },
+        {
+          where: { id: contractorId },
+        }
+      );
+      res.json({ success: true });
+    });
   } catch (error) {
     res.json({ error: error.message });
   }
