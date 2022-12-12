@@ -74,9 +74,9 @@ app.post('/jobs/:job_id/pay', async (req, res) => {
       if (profile.dataValues.type !== 'client') {
         throw new Error('only client can pay to the contractor');
       }
-      const clientProfileUpdated = await Profile.update(
+      const clientProfileUpdated = await Profile.decrement(
         {
-          balance: profile.dataValues.balance - amount,
+          balance: amount,
         },
         {
           where: { id: profile.dataValues.id },
@@ -92,9 +92,9 @@ app.post('/jobs/:job_id/pay', async (req, res) => {
       );
 
       const contractorId = job.dataValues.Contract.dataValues.ContractorId;
-      const cotractorProfileUpdated = await Profile.update(
+      const cotractorProfileUpdated = await Profile.increment(
         {
-          balance: profile.dataValues.balance + amount,
+          balance: amount,
         },
         {
           where: { id: contractorId },
@@ -157,4 +157,5 @@ app.post('/balances/deposit/:userId', async (req, res) => {
     res.send({ error: error.message });
   }
 });
+
 module.exports = app;
