@@ -23,14 +23,13 @@ app.get('/contracts/:id', async (req, res) => {
   if (!contract) return res.status(404).end();
   res.json(contract);
 });
-app.get('/contracts', getProfile, async (req, res) => {
+app.get('/contracts', async (req, res) => {
+  const profileId = req.get('profile_id');
+
   const allUserContracts = await Contract.findAll({
     where: {
       status: { [Op.ne]: 'terminated' },
-      [Op.or]: [
-        { ClientId: req.profile.dataValues.id },
-        { ContractorId: req.profile.dataValues.id },
-      ],
+      [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
     },
   });
   res.json(allUserContracts);
