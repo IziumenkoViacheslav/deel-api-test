@@ -62,24 +62,14 @@ app.post('/jobs/:job_id/pay', async (req, res) => {
   try {
     const profileId = req.get('profile_id');
     const profile = await Profile.findOne({ where: { id: profileId } });
-
     const { amount } = req.body;
-    console.log({ amount });
-    const job_id = req.params.job_id;
-    console.log('job_id', req.params.job_id);
     const balance = profile.balance;
-    console.log({ balance });
     if (balance < amount) {
-      return res.json({ error: 'user have no money for this payment' });
+      throw new Error('user have no money for this payment');
     }
     if (profile.dataValues.type !== 'client') {
-      return res.json({ error: 'only client can pay to the contractor' });
+      throw new Error('only client can pay to the contractor');
     }
-    console.log({ profile: profile.dataValues.id });
-    console.log(
-      'profile.dataValues.balance - amount',
-      profile.dataValues.balance - amount
-    );
     const clientProfileUpdated = await Profile.update(
       {
         balance: profile.dataValues.balance - amount,
@@ -90,10 +80,10 @@ app.post('/jobs/:job_id/pay', async (req, res) => {
     );
     const job = await Job.findOne({
       where: { id: req.params.job_id },
-      include: { model: Contract },
+      include: { model: Contract, where: { status: 'in_progress' } },
     });
+
     const contractorId = job.dataValues.Contract.dataValues.ContractorId;
-    console.log({ contractorId });
     const cotractorProfileUpdated = await Profile.update(
       {
         balance: profile.dataValues.balance + amount,
@@ -104,7 +94,7 @@ app.post('/jobs/:job_id/pay', async (req, res) => {
     );
     res.json({ success: true });
   } catch (error) {
-    res.status(404).end();
+    res.json({ error: error.message });
   }
 });
 module.exports = app;
