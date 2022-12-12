@@ -22,6 +22,9 @@ app.get('/contracts/:id', async (req, res) => {
   if (!contract) return res.status(404).end();
   res.json(contract);
 });
+/**
+ * @returns all contracts for user
+ */
 app.get('/contracts', async (req, res) => {
   const profileId = req.get('profile_id');
 
@@ -33,6 +36,9 @@ app.get('/contracts', async (req, res) => {
   });
   res.json(allUserContracts);
 });
+/**
+ * @returns unpaid jobs for user
+ */
 app.get('/jobs/unpaid', async (req, res) => {
   const profileId = req.get('profile_id');
   const unpaidUserJobs = await Job.findAll({
@@ -49,7 +55,9 @@ app.get('/jobs/unpaid', async (req, res) => {
   });
   res.json(unpaidUserJobs);
 });
-// TODO add transaction
+/**
+ * move money from client to contractor
+ */
 app.post('/jobs/:job_id/pay', async (req, res) => {
   try {
     const profileId = req.get('profile_id');
